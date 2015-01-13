@@ -1,0 +1,19 @@
+\documentclass{jsbook}
+\usepackage{otf}
+  \usepackage{emathMw}
+  \usepackage{emath}
+  \usepackage{emathP}
+  \usepackage{emathR}
+
+\begin{document}
+\frontmatter%目次のページ開始
+\begin{titlepage}
+\ReadTeXFile{title.tex}
+\end{titlepage}
+\tableofcontents %目次
+\mainmatter%メインページ開始
+\pagenumbering{arabic}
+\ReadTeXFile{1st.tex}
+\ReadTeXFile{2nd.tex}
+\ReadTeXFile{3rd.tex}
+\end{document}
