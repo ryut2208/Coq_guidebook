@@ -1,19 +1,48 @@
 \documentclass{jsbook}
+\setlength{\textwidth}{\fullwidth}
+\setlength{\evensidemargin}{\oddsidemargin}
 \begin{document}
-\chapter{準備}
+\chapter{準備\label{準備}}
 入手方法やインストール方法など
-Windows、Mac両対応
+Windows、Mac両対応にしてあります。
 \newpage
 \section{Coqの入手}
-高橋研で使うのはおそらくWindows機なので、このまま読み進める。
-もし、Macを使っているなら、Windows編を流し読みしながら\pageref{Mac編}ページの\ref{Mac編}へ
+高橋研で使うのはおそらくWindows機なので、このまま読み進めてください。
+もし、Macを使っているなら、Windows編を流し読みしながら\pageref{Mac編}ページのMac編へ
 \subsection*{Windows編}
-まずは公式サイト(\verb|https://coq.inria.fr/|)からインストーラをダウンロードする。
-サイトが表示されたら右上にある「Get Coq」をクリック。
+まずは公式サイト(\verb|http://coq.inria.fr/|)からインストーラをダウンロードします。
+アドレスに飛んでサイトが表示されたら右上にある「Get Coq」をクリック。
 その後表示されたページの中腹あたりにある「Binaries」のWindowsのリンクをクリックしてexeファイルをダウンロード。
-ダウンロードが終わったらインストーラを実行して特に何も考えず「はい」なり「次へ」をクリックしてインストールを終わらせる。
-Windowsの場合はこれで終了。
-Coqを使う準備が整った。
+ダウンロードが終わったらインストーラを実行して特に何も考えず「はい」なり「次へ」をクリックしてインストールを終わらせます。
+Windowsの場合はこれで終了です。
+Coqを使う準備が整いました。
 \subsection*{Mac編\label{Mac編}}
+MacでCoqを使う場合には一工夫必要になります。
+筆者が2014年5月頃に最新版のCoqをインストールした時には起動すらすることができませんでした。
+そのため、公式サイトからリンクされている最新版dmgパッケージではないパッケージを入手する必要があります。
+入手する方法は2つありますが、どちらの方法でやるべきかは断言できません。
+これらのどちらかで起動するCoqがインストールできるはずです。
+もし、できなかった場合は諦めてWindowsで作業しましょう。
+PCが支給されるはずなので問題はないはずです。
+
+\subsubsection*{MacPortsを用いた最新版の入手}
+MacPortsを利用して開発版を入手することができます。
+開発版のため動作が不安定な場合があるかもしれませんが、重大なバグ等が取り除かれ起動する場合があります。
+
+MacPortsの概要・インストール手順等はさておき\footnote{付録で説明するかもしれないし、自分で調べてもらうかもしれない}、
+Coqのインストールの説明をします。
+まず、アプリケーション>ユーティリティの中にあるターミナルを起動します。
+起動したら下記のコマンドを打ち込みます。
+\begin{verbatim}
+$ sudu port -v install coq
+\end{verbatim}
+Enterを押すと本体のパスワードが要求され、ビルドが実行されるはずです。
+
+\subsubsection*{旧バージョンの入手}
+公式サイトから安定版の過去バージョンがリンクされています。
+最新版のダウンロードページの下にある「Previous and Development versions of Coq」の中でリンクされている「version 8.3」をクリックしてください。
+Coq 8.3のダウンロードページが表示されたら、「coq-8.3pl5.dmg」と「coqide-8.3pl5.dmg」をダウンロードします。
+ダウンロードできたらパッケージの説明にしたがってインストールします。
+
 
 \end{document}
