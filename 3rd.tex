@@ -1,8 +1,286 @@
 \documentclass{jsbook}
+
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{ascmac}
+
 \begin{document}
 \chapter{論理回路編}
 ここからは筆者が実際に卒業研究で扱った内容を元にCoqの使い方や証明の方法、考え方などを詳解していきます。
 \newpage
-\section{半加算器のモデル化}
-\section{証明}
+\section{半加算器}
+半加算器は2つの2進数が入力されたとき、足した結果Sumと繰り上げの有無Carry outを出力する回路です。
+結果だけを見ればXOR回路で簡単に実装することができます。
+ですが今回は定義通り、AND・OR・NOT回路を使って実装しました。
+
+\begin{figure}[htbp]
+\begin{center}
+  \includegraphics[scale=1.0]{image/Half_adder.eps}
+  \caption{半加算器の回路図 \protect \footnotemark}
+\end{center}
+\end{figure}
+
+\footnotetext{画像はWikipediaより引用}
+
+\subsection*{モデル化}
+半加算器をまるごとモデル化することはできますが、難しいためSとCで分けてモデル化しました。
+図を見ればわかりますが、SとCは
+\begin{eqnarray}
+S&=&(A \vee B) \wedge \lnot (A \wedge B) \nonumber \\
+C&=&A \wedge B \nonumber
+\end{eqnarray}
+で表すことができます。
+これをCoqで記述していきます。
+
+Coqで何かを定義する場合は「Definition」を使います。
+形式は下のようになっています。
+\begin{verbatim}
+Definition 名前 入力 : 出力 := 関数の中身.
+\end{verbatim}
+これにしたがって、回路をモデル化してCoq記述します。
+
+\subsubsection*{Carry outのモデル化}
+まず簡単なCを記述します。
+順番にやっていきましょう。
+まずは名前ですが、ここでは名前を「C\_half\_adder」にしておきましょう。
+入力は\verb|(引数名 : 形名)|で書きます。
+Coqで2進数はbool型なので\verb|(A : bool)|となります。
+引数が複数個ある場合は後ろに同じように記述します。
+今回はAとBの2個なので\verb|(A : bool) (B : bool)|ですね。
+出力は形名だけを書きます。2進数が返ってくるのでboolを書きます。
+
+次に関数の中身を記述していきます。
+論理式のまま書きたいのですが、扱う型がbool型なのでそのまま書くことができません。
+Coqでbool型のANDは「andb」と書きます。
+なら\verb| A andb B|とか書けばいいと思いますが、andbは前置きの演算子なのでこれは間違いです。
+正しくは\verb|andb A B|となります。
+
+今までのをすべて合わせるとCを定義することができます。
+\begin{verbatim}
+Definition (A : bool) (B : bool) : bool := andb A B.
+\end{verbatim}
+Cの定義はこのようになります。
+
+これが正しく定義されているかどうか確かめてみましょう。
+ここでQuery Paneを使います。
+まず、ツールバーにある左から3番目の下向き矢印をクリックしてください。
+今書いた定義の行が緑背景になり、システムメッセージの欄に
+\begin{verbatim}
+C_half_adder is defined
+\end{verbatim}
+と表示されればCoqが定義を読み込みQuery Paneでも使えるようになりました。
+実際にC\_half\_adderを使ってみましょう。
+ペインを表示して左のテキストボックスに「Eval compute in」、右側に「C\_half\_adder true true」を入力してEnterキーを押してください。
+
+\begin{verbatim}
+Result for command Eval compute in C true false . :
+     = false
+     : bool
+\end{verbatim}
+と表示されるはずです。どうやらうまく定義できてそうです。
+しかし、これは4パターンあるうちの1パターンを試してみただけです。
+他の3パターンも自分で確かめてください。
+
+\subsubsection*{Sumのモデル化}
+続いてSの方もモデル化していきましょう。
+やること自体はCと同じですが、論理式自体が少しややこしい分記述も同じく、少し難しくなります。
+また、ここらからCoqの厳密さの片鱗が垣間見えてきます。
+
+では早速記述していきましょう。
+名前は「S\_half\_adder」、入出力はCと一緒です。
+なので、下のようになりますね。
+\begin{verbatim}
+Definition (A : bool) (B : bool) : bool :=
+\end{verbatim}
+今は引数が2つなのでいいですが、引数が増えた場合、横にいくつも増やしていくのは大変です。
+以下のようにまとめることができるので、まとめておきましょう。
+\begin{verbatim}
+Definition (A B : bool) : bool :=
+\end{verbatim}
+C言語と違って\verb*|,(コンマ)でなく、 (半角スペース)で区切るのに注意しましょう。|
+また、\verb|(A B : nat bool)|のように複数同時に定義することはできません。
+
+続いて関数の中身に入ります。
+$$S=(A \vee B) \wedge \lnot (A \wedge B)$$
+Sはこうでした。AND以外にORとNOTが登場しています。
+bool型ではそれぞれ「orb」、「negb」と書きます。
+先ほど書いたとおり、これらの演算子は前置きなので式のままでは書けません。
+どうするかというと、一番外側の演算子から順に記述していきます。
+といっても、式は中置き演算子で書かれているのでわかりにくいと思います。
+一度、記号をそのまま前置きに書き直します。
+$$S= \wedge (\vee  A B) (\lnot (\wedge A B))$$
+するとこうなりますね。
+あとはこれをcoqの演算子に替えて、記述するだけです。
+\begin{verbatim}
+Definition S_half_adder (A B:bool): bool :=
+andb (orb A B) negb (andb A B).
+\end{verbatim}
+見やすさのために改行しましたが、Coqではしてもしなくても問題はありません。
+これでSの定義は完了です。Cと同じようにQuery Paneを使って確認しておくといいでしょう。
+
+\subsection*{証明}
+SとC両方の定義ができたので、半加算器をモデル化することが出来ました。
+これまではCoqで証明をするための前哨戦のようなものでした。
+ここからが本番です。
+
+Coqでは定義以外に、定理や補題にもそれぞれコマンドが用意されています。
+定理は「Theorem」、補題は「Lemma」です。
+書き方は以下のようになっています。
+この二つは書き方が同じなので、Theoremで説明します。
+\begin{verbatim}
+Theorem 名前 : 量化記号 入力, 証明したいこと.
+\end{verbatim}
+Definitionと違って入力の前に量化記号を表す単語(forallもしくはexsists)が入ります。
+この量化記号は省略できません。
+また、出力がなくなって、証明したいことと入力の区切りが,(コンマ)になっています。
+引数がない場合は量化記号と入力は省略することが可能です。
+その場合はちょっとだけ書き方が変わって以下のようになります。
+\begin{verbatim}
+Theorem 名前 : 証明したいこと
+\end{verbatim}
+
+言葉で説明していても分かりにくいと思うので、実際にモデル化した半加算器を使って証明してみましょう。
+まず最初に、当たり前ですがC\_hald\_adderにtrueとtrueが入ったときに、出力もtrueになることを証明してみます。
+とりあえず、Lemmaの形式に合わせて書いてみましょう。
+名前は適当で大丈夫ですが、あとで自分が見直したときに何の定理なのか分かる程度にはしておきましょう。
+今回は変数を使わず、直接値を入れるので下の例を使って記述します。
+すると以下のようになります。
+\begin{verbatim}
+Theorem C_hald_adder_TT : C_hald_adder true true - true.
+\end{verbatim}
+定義をCoqに読み込ませた時点で、それ以降ならandbなどと同じように関数として扱うことが出来ます。
+これはQuery Paneの場合でも同様です。
+なので、Quey Paneでした確認作業は関数に数値を入れていたことになります。
+どちらの場合も\emph{読み込ませなければ関数として使用できない}ので注意してください。
+
+ここから証明の中身に入ります。
+まず、先ほど書いたTheoremの行を読み込ませてください。
+右上のスペースが変化して以下のようになります。
+\begin{verbatim}
+1 subgoals
+______________________________________(1/1)
+C_half_adder true true = true
+\end{verbatim}
+この表示の説明は少しあとにして、とりあえず証明を終わらせてみましょう。
+次に、Theremを書いた次の行に\verb|Proof.|と書いて読み込ませてください。
+右上には変化がありませんが、このコマンドは「proof-editing mode」という、証明モードに入ることを示すコマンドです。
+TheoremやLemmaを使っていれば、これを書かなくても証明モードには入れますが、書いていた方がそれっぽいので書いた方が良いかもしれません。
+次に、改行して\verb|simpl.|と書いて読み込ませてください。
+証明モードに入ってからは式変形などのコマンドを「タクティック」と呼びます。
+この、「simpl.」というタクティックは式の簡略化を行います。
+読み込ませると、C\_half\_adderが簡略化されtrueになります。
+これで、両辺が正しいのは明かです。
+両辺が正しいことを示すタクティックは「reflexivity.」です。
+これを次の行に書いて読み込ませてください。
+すると右上のスペースの表示が\verb|No more subgoals.|となります。
+これでC\_hald\_adderにtrueとtrueが入ったときに、出力もtrueになることが証明できました。
+あとは次の行に「Qed.」と書いて証明モードを終わらせます。
+これで証明終了です。
+全文は以下のようになっています。
+\begin{verbatim}
+Lemma C_hald_adder_TT : C_half_adder true true = true && true.
+Proof.
+simpl.
+reflexivity.
+Qed.
+\end{verbatim}
+定義の場合と同じようにシステムメッセージが出れば、Coqがこの定理を読み込んで使えるようになります。
+
+これ以外のパターンも同じように証明ができます。
+それらは自分でやってみてください。
+次にSの方の証明ですが、Cと同じ感じで証明をするのであれば、非常に簡単に証明ができます。
+なのでこれも自分でやってみるといいでしょう。
+
+これまでやってきた証明は、証明というにはあまりに稚拙なため、それらしい問題を用意しておきます。
+ここまでで使わなかったタクティックも使うので、ある程度理解が進んでから挑戦することをおすすめします。
+
+\begin{itembox}[l]{問題}
+\begin{verbatim}
+Lemma ex1 : forall (A B : bool), C_half_adder A B = andb A B.
+Lemma ex2 : forall (A B : bool), S_half_adder A B = xorb A B. 
+\end{verbatim}
+\end{itembox}
+%Tipsいれる？
+
+\section{証明図}
+先ほど飛ばしてしまった右上の欄に書かれていることについて説明します。
+「右上の」と書くとわかりにくいので、参考にしたwebサイトと統一して「証明図」と呼ぶことにします。
+
+\begin{verbatim}
+1 subgoals
+______________________________________(1/1)
+C_half_adder true true = true
+\end{verbatim}
+証明図はこのようなものでした。
+一番下の「C\_half\_adder true true = true」を\emph{サブゴール}と呼びます。
+これが証明したいことです。
+一番上の「1 subgoals」がサブゴールの数です。
+これは証明の内容によって変動します。
+「\_\_\_\_\_\_\_\_\_\_(1/1)」は、これの下のサブゴールが何個目のサブゴールかを示すものです。
+また、「1 subgoal」の下には仮定が並ぶ場合がありますが、それは出てきた時にまた説明します。
+
+\section{全加算器}
+半加算器が終わったので次は全加算器です。
+回路図は図\ref{full_adder}のようになっています。
+見ての通り半加算器が回路に組み込まれています。
+この半加算器は前節で作ったものをそのまま利用していきます。
+\begin{figure}[htbp]
+\begin{center}
+  \includegraphics[scale=1.0]{image/full_adder.eps}
+  \caption{全加算器の回路図 \protect \footnotemark}
+  \label{full_adder}
+\end{center}
+\end{figure}
+\footnotetext{画像はWikipediaより引用}
+\subsection*{モデル化}
+モデル化は半加算器のモデル化と同じようにします。
+変わったところは、andbと同じようにhalf\_adderを使うことです。
+回路図を見ながら丁寧に組み立てればそこまで難しくないはずです。
+証明の説明のために解答例を載せておきますが、自分で考えてモデル化してください。
+
+\begin{itembox}[l]{全加算器 モデル例}
+\begin{verbatim}
+Definition S_full_adder (A B X : bool) : bool :=
+S_half_adder (S_half_adder A B) X.
+Definition C_full_adder (A B X : bool) : bool :=
+orb (C_half_adder A B) (C_half_adder (S_half_adder A B) X).
+\end{verbatim}
+\end{itembox}
+
+\subsection*{証明}
+どんどん進めていきます。
+全加算器の証明です。
+まずはSの入力がすべてtrueの時に出力もtrueになることを証明します。
+Lemmaを書いてCoqに読み込ませてください。
+すると証明図は以下のようになります。
+\begin{verbatim}
+1 subgoals
+______________________________________(1/1)
+S_full_adder true true true = true
+\end{verbatim}
+この状態で半加算器と同じように「simpl.」と入力して読み込ませても何も変化がありません。
+これは、Coqがこれ以上簡略化することが出来ないためです。
+こうなった場合は式を展開してあげます。
+展開するときは「unfold」というタクティックを使います。
+記述は以下のとおりです。
+\begin{verbatim}
+unfold 展開したいものの名前.
+\end{verbatim}
+
+実際に今の証明に使ってみます。
+trueは展開することが出来ないので、S\_half\_adderを展開します。
+展開したいものの前のところにS\_half\_adderと書いて読み込ませてください。
+すると、S\_half\_adderが定義通りに展開され、サブゴールが変化します。
+\begin{verbatim}
+S_half_adder (S_half_adder true true) true = true
+\end{verbatim}
+この状態で簡略化しても証明は進行しません。
+なら、もう一度展開します。
+今度は、S\_half\_adderですね。
+そうすると、またサブゴールが書き換わり、やたら長々しい式になりました。
+しかし、よく見ると半加算器のSを証明した時と同じようになっています。
+なので、これで簡略化することが出来ます。
+簡略化すると、両辺が等しくなりました。
+あとはいつも通り「reflexivity」してQed.で証明は完了です。
+他のパターンも同じようにできるので証明してください。
+CはSより簡単にできると思います。
 \end{document}
