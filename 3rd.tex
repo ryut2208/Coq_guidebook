@@ -56,7 +56,7 @@ Coqでbool型のANDは「andb」と書きます。
 
 今までのをすべて合わせるとCを定義することができます。
 \begin{verbatim}
-Definition (A : bool) (B : bool) : bool := andb A B.
+Definition C_half_adder (A : bool) (B : bool) : bool := andb A B.
 \end{verbatim}
 Cの定義はこのようになります。
 
@@ -112,7 +112,7 @@ $$S= \wedge (\vee  A B) (\lnot (\wedge A B))$$
 あとはこれをcoqの演算子に替えて、記述するだけです。
 \begin{verbatim}
 Definition S_half_adder (A B:bool): bool :=
-andb (orb A B) negb (andb A B).
+andb (orb A B) ( negb (andb A B)).
 \end{verbatim}
 見やすさのために改行しましたが、Coqではしてもしなくても問題はありません。
 これでSの定義は完了です。Cと同じようにQuery Paneを使って確認しておくといいでしょう。
@@ -145,7 +145,7 @@ Theorem 名前 : 証明したいこと
 今回は変数を使わず、直接値を入れるので下の例を使って記述します。
 すると以下のようになります。
 \begin{verbatim}
-Theorem C_hald_adder_TT : C_hald_adder true true - true.
+Theorem C_hald_adder_TT : C_hald_adder true true =true.
 \end{verbatim}
 定義をCoqに読み込ませた時点で、それ以降ならandbなどと同じように関数として扱うことが出来ます。
 これはQuery Paneの場合でも同様です。
@@ -160,9 +160,10 @@ Theorem C_hald_adder_TT : C_hald_adder true true - true.
 ______________________________________(1/1)
 C_half_adder true true = true
 \end{verbatim}
-この表示の説明は少しあとにして、とりあえず証明を終わらせてみましょう。
+この表示のことを証明図と呼びます。
+この説明は少しあとにして、とりあえず証明を終わらせてみましょう。
 次に、Theremを書いた次の行に\verb|Proof.|と書いて読み込ませてください。
-右上には変化がありませんが、このコマンドは「proof-editing mode」という、証明モードに入ることを示すコマンドです。
+証明図には変化がありませんが、このコマンドは「proof-editing mode」という、証明モードに入ることを示すコマンドです。
 TheoremやLemmaを使っていれば、これを書かなくても証明モードには入れますが、書いていた方がそれっぽいので書いた方が良いかもしれません。
 次に、改行して\verb|simpl.|と書いて読み込ませてください。
 証明モードに入ってからは式変形などのコマンドを「タクティック」と呼びます。
@@ -177,7 +178,7 @@ TheoremやLemmaを使っていれば、これを書かなくても証明モー�
 これで証明終了です。
 全文は以下のようになっています。
 \begin{verbatim}
-Lemma C_hald_adder_TT : C_half_adder true true = true && true.
+Lemma C_hald_adder_TT : C_half_adder true true = true.
 Proof.
 simpl.
 reflexivity.
@@ -187,11 +188,40 @@ Qed.
 
 これ以外のパターンも同じように証明ができます。
 それらは自分でやってみてください。
-次にSの方の証明ですが、Cと同じ感じで証明をするのであれば、非常に簡単に証明ができます。
-なのでこれも自分でやってみるといいでしょう。
 
-これまでやってきた証明は、証明というにはあまりに稚拙なため、それらしい問題を用意しておきます。
-ここまでで使わなかったタクティックも使うので、ある程度理解が進んでから挑戦することをおすすめします。
+\subsubsection*{C\_half\_adderの証明}
+次にSの方の証明ですが、Cの時に使わなかったタクティックを使う必要があるためちょっとだけ難しくなります。
+Cと同じようにtrueを2つ入力にする場合を見てみましょう。
+\begin{verbatim}
+Theorem S_hald_adder_TT : S_hald_adder true true = false.
+\end{verbatim}
+CがSに、右辺のtrueがfalseに変わった以外は全く同じです。
+Cであれば、Proof.のあとにsimplをすれば両辺が等しくなって証明が終わりますが、同じようにしても証明図は変わりません。
+これは、Coqがこれ以上簡略化することが出来ないためです。
+こうなった場合は式を展開すると証明が進む場合があります。
+式を展開するときは「unfold」というタクティックを使います。
+記述は以下のとおりです。
+\begin{verbatim}
+unfold 展開したいものの名前.
+\end{verbatim}
+実際に今の証明に使ってみます。
+trueは展開することが出来ないので、S\_half\_adderを展開します。
+展開したいものの前のところにS\_half\_adderと書いて読み込ませてください。
+すると、S\_half\_adderが定義通りに展開され、サブゴールが変化します。
+\begin{verbatim}
+1 subgoals
+______________________________________(1/1)
+andb (orb true true) (negb (andb true true)) = false
+\end{verbatim}
+この状態で簡略化をしてみると両辺が等しくなります。
+そうなったらあとはCと同じです。
+reflexivity.からQed.で証明は終了です。
+
+これまでやってきた証明は、値を直接入れているものばかりで証明らしくないので、それらしい問題を用意しておきます。
+ex1はここまでで使わなかったタクティックを使いますが、それ以外は半加算器の証明が出来ていれば出来ると思います。
+ex2は新しいタクティックを2つ使います。
+そのうちの1つは今までに使ったタクティックと少し毛色が違うので難しいと思います。
+解答例は節末に書いておきます。
 
 \begin{itembox}[l]{問題}
 \begin{verbatim}
@@ -202,9 +232,8 @@ Lemma ex2 : forall (A B : bool), S_half_adder A B = xorb A B.
 %Tipsいれる？
 
 \section{証明図}
-先ほど飛ばしてしまった右上の欄に書かれていることについて説明します。
-「右上の」と書くとわかりにくいので、参考にしたwebサイトと統一して「証明図」と呼ぶことにします。
-
+先ほど飛ばしてしまった証明図についての説明をします。
+呼び方は参考にしたwebサイトと統一して証明図と呼ぶことにします。
 \begin{verbatim}
 1 subgoals
 ______________________________________(1/1)
@@ -235,7 +264,43 @@ C_half_adder true true = true
 モデル化は半加算器のモデル化と同じようにします。
 変わったところは、andbと同じようにhalf\_adderを使うことです。
 回路図を見ながら丁寧に組み立てればそこまで難しくないはずです。
-証明の説明のために解答例を載せておきますが、自分で考えてモデル化してください。
+なので自分でモデル化してみてください。
+
+\subsection*{証明}
+どんどん進めていきます。
+全加算器の証明です。
+こちらの場合も、今回は引数に値を直接入れる方法でやってみてください。
+やることは半加算器とほぼ同じなので難しくないはずです。
+
+モデル化と証明の例は節末に書いておきます。
+\newpage
+\begin{itembox}[l]{問題 証明例}
+\begin{verbatim}
+Lemma ex1 : forall (A B : bool), C_half_adder A B = andb A B.
+Proof.
+intros.
+unfold C_half_adder.
+reflexivity.
+Qed.
+
+Lemma ex2 : forall (A B : bool), S_half_adder A B = xorb A B. 
+Proof.
+intros.
+unfold S_half_adder.
+destruct A.
+destruct B.
+simpl.
+reflexivity.
+simpl.
+reflexivity.
+destruct B.
+simpl.
+reflexivity.
+simpl.
+reflexivity.
+Qed.
+\end{verbatim}
+\end{itembox}
 
 \begin{itembox}[l]{全加算器 モデル例}
 \begin{verbatim}
@@ -246,41 +311,23 @@ orb (C_half_adder A B) (C_half_adder (S_half_adder A B) X).
 \end{verbatim}
 \end{itembox}
 
-\subsection*{証明}
-どんどん進めていきます。
-全加算器の証明です。
-まずはSの入力がすべてtrueの時に出力もtrueになることを証明します。
-Lemmaを書いてCoqに読み込ませてください。
-すると証明図は以下のようになります。
+\begin{itembox}[l]{全加算器 証明一部}
 \begin{verbatim}
-1 subgoals
-______________________________________(1/1)
-S_full_adder true true true = true
-\end{verbatim}
-この状態で半加算器と同じように「simpl.」と入力して読み込ませても何も変化がありません。
-これは、Coqがこれ以上簡略化することが出来ないためです。
-こうなった場合は式を展開してあげます。
-展開するときは「unfold」というタクティックを使います。
-記述は以下のとおりです。
-\begin{verbatim}
-unfold 展開したいものの名前.
-\end{verbatim}
+Example C_full_adder_TTT: (C_full_adder true true true) = true.
+Proof.
+unfold C_full_adder.
+simpl.
+reflexivity.
+Qed.
 
-実際に今の証明に使ってみます。
-trueは展開することが出来ないので、S\_half\_adderを展開します。
-展開したいものの前のところにS\_half\_adderと書いて読み込ませてください。
-すると、S\_half\_adderが定義通りに展開され、サブゴールが変化します。
-\begin{verbatim}
-S_half_adder (S_half_adder true true) true = true
+Lemma S_full_adder_TTT: (S_full_adder true true true) = true.
+Proof.
+unfold S_full_adder.
+unfold S_half_adder.
+simpl.
+reflexivity.
+Qed.
 \end{verbatim}
-この状態で簡略化しても証明は進行しません。
-なら、もう一度展開します。
-今度は、S\_half\_adderですね。
-そうすると、またサブゴールが書き換わり、やたら長々しい式になりました。
-しかし、よく見ると半加算器のSを証明した時と同じようになっています。
-なので、これで簡略化することが出来ます。
-簡略化すると、両辺が等しくなりました。
-あとはいつも通り「reflexivity」してQed.で証明は完了です。
-他のパターンも同じようにできるので証明してください。
-CはSより簡単にできると思います。
+\end{itembox}
+
 \end{document}
