@@ -1,6 +1,9 @@
 \documentclass{jsbook}
+
 \usepackage[dvipdfmx]{graphicx}
 \usepackage{ascmac}
+\usepackage{itembkbx}
+
 \begin{document}
 \chapter{Paillet6編}
 ループを持つ論理回路についてのパートです。\\
@@ -19,7 +22,7 @@
 \end{center}
 \end{figure}
 
-\section{レジスタについて}
+\section{レジスタについて \label{レジスタ}}
 加算器と違い、この回路はレジスタを含んでいます。
 回路図のR1、R2、R3がそうです。
 レジスタには種類がありますが、ここで用いられているレジスタは「入力を1時刻遅らせて出力する」という機能で、いわゆる遅延素子です。
@@ -62,13 +65,17 @@ Parameter test3 = nat -> bool.
 と書いて、unfoldしてもnat->boolにはならず、test3のままです。
 場合によっては、うまく行かなくなる場合がありますが、今回の場合はかなり内側の、一番展開がされた時にようやく登場するので問題ありません。
 
-\begin{itembox}[l]{Paillet6のモデル}
-\begin{verbatim}
+また、NQTHM側の都合で単純に処理できていなかったところもCoq用に変更しました。
+たとえば、「自然数が０であるかどうかを判定する zerop」という関数や、帰納法を正しく実行させるための「mysub1」などです。
+zeropはCoqではパターンマッチで処理できるのでその関数自体を省略しています。
+mysub1はNQTHMと違い、$n - 1$を何度繰り返しても、帰納法を用いた時も停止しないことはないので$-1$で記述しています。
+そうして書きなおしたモデルが以下になります。
+
+\begin{breakitembox}<parindent = 0zw>[l]{Paillet6のモデル}
+  \begin{verbatim}
 Definition tau := nat.
 Parameter call : tau -> bool.
 Parameter m : tau -> bool.
-
-Definition m1 := nat -> bool .
 
 Definition r0_b := call .
 Definition r0_a (t:tau) (s0:bool) : bool :=
@@ -79,13 +86,11 @@ end.
 
 Definition r1_b (t:tau)(s0:bool) : bool :=
 andb ( andb (m t) (call t)) (negb (r0_a t s0)).
-
 Definition r1_a (t:tau)(s0 s1 : bool) : bool :=
 match t with
 |0 => s1
 |S n => r1_b n s0
 end.
-
 Fixpoint r2_a (t:tau)(s0 s2 : bool) : bool :=
 match t with
 |0 => s2
@@ -98,7 +103,58 @@ r1_a t s0 s1.
 
 Definition hear (t:tau)(s0 s2 : bool) : bool :=
 r2_a t s0 s2.
+  \end{verbatim}
+\end{breakitembox}
+\subsection*{Paillet6のレジスタ}
+このモデルにおいてのレジスタはr0\_bからr2\_aまでです。
+\ref{レジスタ}節で紹介したレジスタとは違う点がいくつかあり、
+\begin{itemize}
+\item 入力がリストではない
+\item レジスタの前後で定義を分けている
+\end{itemize}
+などが挙げられます。
+まず、「入力がリストではない」ですが、この回路における入力はCALLとMです。
+これら2つの入力は「\verb|tau -> bool|」で定義しています。
+これは「\emph{nat型の何か}が入力されると\emph{bool型の何か}を出力する」という意味です。
+リストは、リストの各要素を時刻とすると各時刻の値が時間によって固定されているのに対し、
+この方法は、各時刻の値は不定であるという点が違いです。
+2つめの違いは定義どおりを忠実に守ったこと、こうした方が定義が見やすくなるという理由からです。
+前後を分けずに一つにまとめても同じように証明できることは確認済みです\footnote{2015/01/23}。
+最終的には1つにまとめたものに書き直す予定です。
+
+\section{証明}
+この回路が満たすべき性質は以下の二つです。
+\begin{itemize}
+\item{INFINがtrueとなるのは1時刻前のMおよびCALLがtrueで2時刻前のCALLがfalseの場合でありかつそのときに限る}
+$$\mbox{INFIN}(\tau)=\mbox{M}(\tau-1) \wedge \mbox{CALL}(\tau-1) \wedge \lnot \mbox{CALL}(\tau-2)$$
+\item{HEARがtrueになるのは1時刻前のCALLがtrueの場合でかつそのときに限る}
+$$\mbox{HEAR}(\tau) = \mbox{CALL}(\tau-1)$$
+※レジスタの初期値はs0,s2ともにfalseであると仮定
+\end{itemize}
+ここで$\tau$は時刻を示します。
+これらを証明しました。
+モデル化が終わった時にこれをそのまま証明しようとしてみたのですが、いろいろな問題を見落としていたため証明はできませんでした。
+
+まず、証明ができなかった理由として、$\tau-1$や$\tau-2$を見落としていたことです。
+今回、時間を自然数で定義しているため、いくらマイナスを重ねても0より下に下がることはありません。
+そのため、$\tau$が1以下の場合に正しい性質を満たせなくなります。
+したがって、$\tau > 1$という前提条件を追加しました。
+
+前提条件以外はすべて上記の性質を、定義したものを使ってそのまま書き下してLammaを書きました。
+
+\begin{itembox}[l]{Lemma}
+\begin{verbatim}
+Lemma infin_is_correct : forall (t:tau)(s0 s1:bool), 
+t>1 ->
+(infin t s0 s1 = 
+andb ( andb ( m (t-1)) (call (t-1))) (negb ( call ((t-2))))).
+
+Lemma hear_is_correct : forall (t:tau)(s0 s2:bool),
+(s0 = false /\ s2 = false) -> t > 0 ->
+(hear t s0 s2 = call (t-1)).
 \end{verbatim}
 \end{itembox}
-\section{証明}
+
+\subsection*{INFINの証明}
+\subsection*{HEARの証明}
 \end{document}
